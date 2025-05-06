@@ -1,3 +1,4 @@
+//dentro de values
 <resources>
     <string name="app_name">AgendaComSQL - Aula 11</string>
     <string name="hint_contato">Insira o nome do contato</string>
