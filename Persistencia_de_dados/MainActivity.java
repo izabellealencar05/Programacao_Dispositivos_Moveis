@@ -1,13 +1,14 @@
-//Alunos: Izabelle Alencar Nabarrete - 22301521
-// Yago de Queiroz Pio - 22308708
-package com.example.prova1_dispositivosmveis;
+package com.example.agendacomsql_aula11;
 
-import android.content.Intent;
+import android.annotation.SuppressLint;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -16,59 +17,75 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.android.material.textfield.TextInputEditText;
+
+import java.util.ArrayList;
+
 public class MainActivity extends AppCompatActivity {
-    private RadioGroup questao1;
-    private RadioGroup questao2;
-    private RadioGroup questao3;
-    private Button botaoFinalizarProva;
+    private TextInputEditText nome;
+    private TextInputEditText telefone;
+    private Button salvar;
+
+    private ListView contatos;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
-         iniciarProva();
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+        
+        inicializaTela();
     }
 
-    private void iniciarProva() {
-        questao1 = findViewById(R.id.mainActivity_RadioGroupPergunta1);
-        questao2 = findViewById(R.id.mainActivity_RadioGroupPergunta2);
-        questao3 = findViewById(R.id.mainActivity_RadioGroupPergunta3);
-        botaoFinalizarProva = findViewById(R.id.mainActivity_botaoFinalizarProva);
-        botaoFinalizarProva.setOnClickListener(new View.OnClickListener() {
+    private void inicializaTela() {
+        nome = findViewById(R.id.editTextNome);
+        telefone = findViewById(R.id.editTextTelefone);
+        salvar = findViewById(R.id.buttonSalvar);
+        contatos = findViewById(R.id.listViewContatos);
+        
+        salvar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (questao1.getCheckedRadioButtonId() == -1 ||
-                        questao2.getCheckedRadioButtonId() == -1 ||
-                        questao3.getCheckedRadioButtonId() == -1) {
-
-                    Toast.makeText(MainActivity.this, "Preencha todos os campos", Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(MainActivity.this, "Finalizando a prova!", Toast.LENGTH_SHORT).show();
-                    passarProxTela();
-                }
+                salvaContato();
+                Toast.makeText(MainActivity.this, R.string.toast_salvar, Toast.LENGTH_SHORT).show();
             }
         });
     }
-    private void passarProxTela() {
-        String resposta1 = verificaResposta(questao1);
-        String resposta2 = verificaResposta(questao2);
-        String resposta3 = verificaResposta(questao3);
 
-        Intent telaResultado = new Intent(this, TelaResultado.class);
-        telaResultado.putExtra("chaveResposta1", resposta1);
-        telaResultado.putExtra("chaveResposta2", resposta2);
-        telaResultado.putExtra("chaveResposta3", resposta3);
-        
-        startActivity(telaResultado);
+    @SuppressLint("Range")
+    private void salvaContato() {
+        String nomeInformado = nome.getText().toString();
+        String telefoneInformado = telefone.getText().toString();
+
+        SQLiteDatabase db = openOrCreateDatabase("agenda.db", MODE_PRIVATE, null);
+        db.execSQL("CREATE TABLE IF NOT EXISTS tab_contatos " +
+                "(id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT, telefone TEXT)");
+
+        db.execSQL("INSERT INTO tab_contatos (nome, telefone) VALUES ('"+nomeInformado+"', '"+telefoneInformado+"') ");
+
+        Cursor cursor = db.rawQuery("SELECT * FROM tab_contatos", null);
+        ArrayList<String> usuarios = new ArrayList<>();
+
+        if (cursor.moveToFirst()){
+            do {
+                String nome = cursor.getString(cursor.getColumnIndex("nome"));
+                String telefone =cursor.getString(cursor.getColumnIndex("telefone"));
+
+                Log.d("SQL", "NOME CADASTRADO: " + nome );
+                usuarios.add("Nome: " + nome + "telefone: " + telefone);
+            } while (cursor.moveToNext());
+        }
+
+        Toast.makeText(this, R.string.toast_salvar, Toast.LENGTH_SHORT).show();
+
+        ArrayAdapter<String> adapter =
+                new ArrayAdapter<>(this,
+                        androidx.appcompat.R.layout.support_simple_spinner_dropdown_item, usuarios);
+        contatos.setAdapter(adapter);
     }
-
-    private String verificaResposta(RadioGroup questao) {
-        int idOpcaoSelecionada = questao.getCheckedRadioButtonId();
-        RadioButton radioButtonSelecionado = findViewById(idOpcaoSelecionada);
-        String resposta = radioButtonSelecionado.getText().toString();
-        return resposta;
-
-    }
-
-
 }
